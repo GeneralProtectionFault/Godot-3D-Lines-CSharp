@@ -8,7 +8,7 @@ New: draw capsule ray
 
 `DrawLine` parameters: start point, end point, color (optional), time (optional)  
 `DrawRay` parameters: start point, velocity (direction and magnitude), color (optional), time (optional)  
-`DrawCube` parameters: start point, half extents (float), color(optional), time (optional)
+`DrawCube` parameters: start point, half extents (float), color(optional), time (optional)  
 `DrawCapsuleRay` parameters: start point, radius, direction, length, color(optional), time (optional)
 
 #### Examples
