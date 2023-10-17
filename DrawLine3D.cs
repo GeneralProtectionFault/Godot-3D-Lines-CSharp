@@ -1,13 +1,13 @@
-using System;
 using Godot;
 using System.Collections.Generic;
 
 /// <summary>
 /// Draw line debug. Add to AutoLoad, call using DrawLine3D.Instance
 /// </summary>
-public class DrawLine3D : Node2D
+public partial class DrawLine3D : Node2D
 {
 	// Forked from https://github.com/klaykree/Godot-3D-Lines
+	// Forked again from https://github.com/Rytelier/Godot-3D-Lines-CSharp
 
 	static DrawLine3D instance;
 
@@ -26,9 +26,9 @@ public class DrawLine3D : Node2D
 
 	public bool enabled = true;
 	
-	public override void _Process(float delta)
+	public override void _Process(double delta)
 	{
-#if DEBUG
+		#if DEBUG
 		if (!enabled) return;
 
 		for (int i = 0; i < lines.Count; i++)
@@ -36,20 +36,22 @@ public class DrawLine3D : Node2D
 			lines[i].time -= delta;
         }
 
-		if((lines.Count > 0 || removedLine))
+		if(lines.Count > 0 || removedLine)
 		{
-			Update() ;//Calls _draw
+			QueueRedraw();
 			removedLine = false;
 		}
-#endif
+		#endif
 	}
 	
 	public override void _Draw()
 	{
-#if DEBUG
+		#if DEBUG
+		// GD.Print("Draw called");
+
 		if (!enabled) return;
 
-		var Cam = GetViewport().GetCamera();
+		var Cam = GetViewport().GetCamera3D();
         for (int i = 0; i < lines.Count; i++)
         {
 			var ScreenPointStart = Cam.UnprojectPosition(lines[i].start);
@@ -62,17 +64,17 @@ public class DrawLine3D : Node2D
 			
 			DrawLine(ScreenPointStart, ScreenPointEnd, lines[i].lineColor);
         }
-        //Remove lines that have timed out
 
+        //Remove lines that have timed out
         for (int i = lines.Count - 1; i >= 0; i--)
         {
-			if((lines[i].time < 0.0))
+			if(lines[i].time < 0.0)
 			{
 				lines.RemoveAt(i);
 				removedLine = true;
 			}
         }
-#endif
+		#endif
 	}
 	
 	public void DrawLine(Vector3 start, Vector3 end, Color? color = null, float time = 0)
@@ -93,24 +95,24 @@ public class DrawLine3D : Node2D
 		#endif	
 	}
 
-	public void DrawCapsuleRay(Vector3 origin, float radius, Vector3 direction, float distance, Color? color = null, float time = 0)
+	public void DrawCapsuleRay(Vector3 origin, float radius, Vector3 direction, float distance, Color? color = null, float time = 0, int density = 8)
 	{
 		#if DEBUG
 		Color col = color == null ? new Color(1,1,1,1) : (Color)color;
 
 		Vector3 axis =  direction.Cross(Vector3.Up).Normalized();
 		Vector3 axisR = direction.Cross(Vector3.Forward).Normalized();
-		Vector3 dirCircle = axis == Vector3.Zero ? Vector3.Zero : direction.Normalized().Rotated(axis, Mathf.Deg2Rad(90)).Normalized();
-		Vector3 dirCircleR = axisR == Vector3.Zero ? Vector3.Zero : direction.Normalized().Rotated(axisR, Mathf.Deg2Rad(90)).Normalized();
+		Vector3 dirCircle = axis == Vector3.Zero ? Vector3.Zero : direction.Normalized().Rotated(axis, Mathf.DegToRad(90)).Normalized();
+		Vector3 dirCircleR = axisR == Vector3.Zero ? Vector3.Zero : direction.Normalized().Rotated(axisR, Mathf.DegToRad(90)).Normalized();
 		Vector3 axisLoop = dirCircle.Cross(dirCircleR).Normalized();
 
 		Vector3 tip = origin - direction.Normalized() * radius;
 		Vector3 tip2 = origin + direction.Normalized() * distance + direction.Normalized() * radius;
 
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < density; i++)
 		{
-			Vector3 dirCircleLoop = axisLoop == Vector3.Zero ? Vector3.Zero : dirCircle.Rotated(axisLoop, Mathf.Deg2Rad(i * (360 / 8)));
-			Vector3 dirCircleLoopPrev = axisLoop == Vector3.Zero ? Vector3.Zero : dirCircle.Rotated(axisLoop, Mathf.Deg2Rad((i - 1) * (360 / 8)));
+			Vector3 dirCircleLoop = axisLoop == Vector3.Zero ? Vector3.Zero : dirCircle.Rotated(axisLoop, Mathf.DegToRad(i * (360 / density)));
+			Vector3 dirCircleLoopPrev = axisLoop == Vector3.Zero ? Vector3.Zero : dirCircle.Rotated(axisLoop, Mathf.DegToRad((i - 1) * (360 / density)));
 
 			Vector3 loopEnd = origin + dirCircleLoop * radius;
 			Vector3 loopEndPrev = origin + dirCircleLoopPrev * radius;
@@ -119,9 +121,9 @@ public class DrawLine3D : Node2D
 			DrawRay(loopEnd, direction.Normalized() * distance, col, time);
 
 			//Rays connecting cylinder cap
-			Vector3 toPrev = MathExtend.RayTarget(loopEnd, loopEndPrev);
-			DrawRay(loopEnd, toPrev, col, time);
-			DrawRay(origin + direction.Normalized() * distance + dirCircleLoop * radius, toPrev, col, time);
+			// Vector3 toPrev = MathExtend.RayTarget(loopEnd, loopEndPrev);
+			// DrawRay(loopEnd, toPrev, col, time);
+			// DrawRay(origin + direction.Normalized() * distance + dirCircleLoop * radius, toPrev, col, time);
 
 			//Rays to the tip
 			DrawLine(loopEnd, tip, col, time);
@@ -137,9 +139,9 @@ public class DrawLine3D : Node2D
 		if (!enabled) return;
 		//Start at the 'top left'
 		Vector3 LinePointStart = center;
-		LinePointStart.x -= halfExtents;
-		LinePointStart.y += halfExtents;
-		LinePointStart.z -= halfExtents;
+		LinePointStart.X -= halfExtents;
+		LinePointStart.Y += halfExtents;
+		LinePointStart.Z -= halfExtents;
 		
 		//Draw top square
 		var LinePointEnd = LinePointStart + new Vector3(0, 0, halfExtents * 2);
@@ -186,7 +188,7 @@ public class Line
 	public Vector3 start;
 	public Vector3 end;
 	public Color lineColor;
-	public float time;
+	public double time;
 
 	public Line(Vector3 _start, Vector3 _end, Color _lineColor, float _time)
 	{
