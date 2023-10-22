@@ -57,12 +57,15 @@ public partial class DrawLine3D : Node2D
 			var ScreenPointStart = Cam.UnprojectPosition(lines[i].start);
 			var ScreenPointEnd = Cam.UnprojectPosition(lines[i].end);
 			
-			//Dont draw line if either start || end is considered behind the camera
-			//this causes the line to !be drawn sometimes but avoids a bug where the
-			//line is drawn incorrectly
+			// Dont draw line if either start || end is considered behind the camera
+			// this causes the line to not be drawn sometimes but avoids a bug where the
+			// line is drawn incorrectly
+			// TODO:  This is likely because the line properties are determined by unprojecting to the 2D viewport.
+			// So, if part of the line is behind the camera, that would likely cause the problem.
+			// A fix might be to truncate the line's length in this case such that it only goes to the edge of the viewport.
 			if(Cam.IsPositionBehind(lines[i].start) || Cam.IsPositionBehind(lines[i].end)) continue;
 			
-			DrawLine(ScreenPointStart, ScreenPointEnd, lines[i].lineColor);
+			DrawLine(ScreenPointStart, ScreenPointEnd, lines[i].lineColor, lines[i].width);
         }
 
         //Remove lines that have timed out
@@ -77,21 +80,21 @@ public partial class DrawLine3D : Node2D
 		#endif
 	}
 	
-	public void DrawLine(Vector3 start, Vector3 end, Color? color = null, float time = 0)
+	public void DrawLine(Vector3 start, Vector3 end, Color? color = null, float time = 0, float width = -1)
 	{  
 		#if DEBUG
 		Color col = color == null ? new Color(1,1,1,1) : (Color)color;
 		if (!enabled) return;
-		lines.Add(new Line(start, end, col, time));
+		lines.Add(new Line(start, end, col, time, width));
 		#endif
 	}
 	
-	public void DrawRay(Vector3 start, Vector3 ray, Color? color = null, float time = 0)
+	public void DrawRay(Vector3 start, Vector3 ray, Color? color = null, float time = 0, float width = -1)
 	{  
 		#if DEBUG
 		Color col = color == null ? new Color(1,1,1,1) : (Color)color;
 		if (!enabled) return;
-		lines.Add(new Line(start, start + ray, col, time));
+		lines.Add(new Line(start, start + ray, col, time, width));
 		#endif	
 	}
 
@@ -189,13 +192,14 @@ public class Line
 	public Vector3 end;
 	public Color lineColor;
 	public double time;
+	public float width;
 
-	public Line(Vector3 _start, Vector3 _end, Color _lineColor, float _time)
+	public Line(Vector3 _start, Vector3 _end, Color _lineColor, float _time, float _width)
 	{
 		this.start = _start;
 		this.end = _end;
 		this.lineColor = _lineColor;
 		this.time = _time;
-
+		this.width = _width;
 	}
 }
